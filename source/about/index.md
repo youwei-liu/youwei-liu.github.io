@@ -21,4 +21,10 @@ comments: false
 
 - GitHub：[youwei-liu](https://github.com/youwei-liu)
 
+## 微信
+
+微信号与二维码位置已预留，后续更新具体信息。
+
+> 微信：待更新
+
 比起一份静态简历，我更希望这个网站能呈现一条持续前进的轨迹。

@@ -1,24 +1,28 @@
-# 浪里白条的个人网站
+# 浪里白条的个人博客
 
-一个无需构建工具的静态个人主页，可直接部署到 GitHub Pages。
+使用 [Hexo](https://hexo.io/) 与 [Butterfly](https://github.com/jerryc127/hexo-theme-butterfly) 构建，通过 GitHub Pages 发布。
 
-## 本地预览
+## 本地运行
 
 ```bash
-python3 -m http.server 8000
+npm install
+npm run server
 ```
 
-打开 `http://localhost:8000`。
+访问 `http://localhost:4000`。
 
-## 发布
+## 写文章
 
-1. 在 GitHub 创建仓库。若希望地址为 `https://youwei-liu.github.io`，仓库名必须是 `youwei-liu.github.io`。
-2. 将本目录作为独立 Git 仓库并推送至该仓库的 `main` 分支。
-3. 在仓库的 **Settings → Pages → Build and deployment** 中选择 **GitHub Actions**。
-4. 工作流会自动部署，后续每次推送 `main` 都会更新网站。
+```bash
+npm run new -- "文章标题"
+```
 
-## 修改内容
+文章会生成在 `source/_posts/`，使用 Markdown 编辑。完成后提交并推送到 `main`，GitHub Actions 会自动构建和发布。
 
-- 页面资料：`index.html`
-- 视觉样式：`styles.css`
-- 头像：`头像.jpg`
+## 常用位置
+
+- 网站信息：`_config.yml`
+- Butterfly 设置：`_config.butterfly.yml`
+- 文章：`source/_posts/`
+- 关于页面：`source/about/index.md`
+- 图片：`source/img/`

@@ -1,0 +1,44 @@
+:root {
+  --liushen-radius: 14px;
+}
+
+#page-header.full_page {
+  background-position: center 38%;
+}
+
+#page-header::before {
+  background: linear-gradient(110deg, rgba(18, 32, 39, .78), rgba(38, 55, 64, .48));
+}
+
+#site-title {
+  letter-spacing: .12em;
+  text-shadow: 0 3px 18px rgba(0, 0, 0, .35);
+}
+
+#site-subtitle {
+  letter-spacing: .06em;
+}
+
+#aside-content .card-widget,
+.recent-post-item,
+#post,
+#page,
+#archive {
+  border: 1px solid rgba(77, 124, 138, .1);
+  box-shadow: 0 10px 30px rgba(31, 51, 60, .08);
+}
+
+#aside-content .card-info .avatar-img {
+  border: 4px solid rgba(255, 255, 255, .85);
+}
+
+.article-sort-item-title,
+.post-title {
+  font-weight: 650;
+}
+
+@media screen and (min-width: 769px) {
+  #recent-posts > .recent-post-item {
+    min-height: 260px;
+  }
+}

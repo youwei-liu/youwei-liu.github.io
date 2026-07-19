@@ -1,0 +1,244 @@
+nav:
+  logo: /img/avatar.jpg
+  display_title: true
+  display_post_title: true
+  fixed: true
+
+menu:
+  首页: / || fas fa-home
+  时间轴: /archives/ || fas fa-archive
+  分类: /categories/ || fas fa-folder-open
+  标签: /tags/ || fas fa-tags
+  关于我: /about/ || fas fa-user
+  GitHub: https://github.com/youwei-liu || fab fa-github
+
+social:
+  fab fa-github: https://github.com/youwei-liu || GitHub || '#24292e'
+
+favicon: /img/avatar.jpg
+avatar:
+  img: /img/avatar.jpg
+  effect: true
+
+disable_top_img: false
+default_top_img: /img/avatar.jpg
+index_img: /img/avatar.jpg
+archive_img: /img/avatar.jpg
+tag_img: /img/avatar.jpg
+category_img: /img/avatar.jpg
+footer_img: false
+background: '#f6f8fa'
+
+cover:
+  index_enable: true
+  aside_enable: true
+  archives_enable: true
+  default_cover:
+    - /img/avatar.jpg
+
+subtitle:
+  enable: true
+  effect: true
+  source: false
+  sub:
+    - 在技术浪潮里持续探索
+    - 记录技术、项目与生活
+    - 道阻且长，与君共勉
+
+index_layout: 3
+index_post_content:
+  method: 2
+  length: 260
+
+post_meta:
+  page:
+    date_type: created
+    date_format: date
+    categories: true
+    tags: true
+    label: true
+  post:
+    position: left
+    date_type: both
+    date_format: date
+    categories: true
+    tags: true
+    label: true
+
+toc:
+  post: true
+  page: false
+  number: true
+  expand: false
+  style_simple: false
+  scroll_percent: true
+
+post_copyright:
+  enable: true
+  decode: false
+  author_href: https://github.com/youwei-liu
+  license: CC BY-NC-SA 4.0
+  license_url: https://creativecommons.org/licenses/by-nc-sa/4.0/
+
+post_edit:
+  enable: true
+  url: https://github.com/youwei-liu/youwei-liu.github.io/edit/main/source/
+related_post:
+  enable: true
+  limit: 4
+  date_type: created
+post_pagination: 1
+
+footer:
+  owner:
+    enable: true
+    since: 2026
+  copyright:
+    enable: true
+    version: true
+  custom_text: 保持好奇，保持创造。
+
+aside:
+  enable: true
+  hide: false
+  button: true
+  mobile: true
+  position: right
+  display:
+    archive: true
+    tag: true
+    category: true
+  card_author:
+    enable: true
+    description: 在技术浪潮里持续探索
+    button:
+      enable: true
+      icon: fab fa-github
+      text: 关注我的 GitHub
+      link: https://github.com/youwei-liu
+  card_announcement:
+    enable: true
+    content: 欢迎来到浪里白条的数字自留地。
+  card_recent_post:
+    enable: true
+    limit: 5
+    sort: date
+  card_newest_comments:
+    enable: false
+  card_categories:
+    enable: true
+    limit: 8
+    expand: none
+  card_tags:
+    enable: true
+    limit: 30
+    color: true
+    orderby: random
+    order: 1
+  card_archives:
+    enable: true
+    type: monthly
+    format: YYYY年MM月
+    order: -1
+    limit: 8
+  card_webinfo:
+    enable: true
+    post_count: true
+    last_push_date: true
+    runtime_date: 2026/07/19 00:00:00
+
+readmode: true
+darkmode:
+  enable: true
+  button: true
+  autoChangeMode: false
+rightside_scroll_percent: true
+rightside_config_animation: true
+
+code_blocks:
+  theme: light
+  macStyle: true
+  height_limit: 800
+  word_wrap: false
+  copy: true
+  language: true
+  shrink: false
+  fullpage: false
+
+copy:
+  enable: true
+  copyright:
+    enable: false
+    limit_count: 150
+
+busuanzi:
+  site_uv: true
+  site_pv: true
+  page_pv: true
+
+search:
+  use: local_search
+  placeholder: 搜索文章
+  local_search:
+    preload: false
+    top_n_per_article: 1
+    unescape: false
+    pagination:
+      enable: false
+      hitsPerPage: 8
+
+share:
+  use: sharejs
+  sharejs:
+    sites: wechat,weibo,qq
+comments:
+  use:
+
+theme_color:
+  enable: true
+  main: '#4d7c8a'
+  paginator: '#4d7c8a'
+  button_hover: '#e07a5f'
+  text_selection: '#81b29a'
+  link_color: '#3d7180'
+  meta_color: '#858585'
+  hr_color: '#81b29a'
+  code_foreground: '#e07a5f'
+  code_background: 'rgba(27, 31, 35, .05)'
+  toc_color: '#4d7c8a'
+  blockquote_padding_color: '#4d7c8a'
+  blockquote_background_color: '#eef5f4'
+  scrollbar_color: '#4d7c8a'
+  meta_theme_color_light: '#ffffff'
+  meta_theme_color_dark: '#0d0d0d'
+
+rounded_corners_ui: true
+mask:
+  header: true
+  footer: true
+enter_transitions: true
+display_mode: light
+font:
+  global_font_size: 16px
+  font_family: '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif'
+
+lazyload:
+  enable: true
+  native: true
+  field: site
+lightbox: fancybox
+Open_Graph_meta:
+  enable: true
+structured_data:
+  enable: true
+instantpage: true
+
+inject:
+  head:
+    - <link rel="stylesheet" href="/css/custom.css">
+  bottom: []
+
+CDN:
+  internal_provider: local
+  third_party_provider: jsdelivr
+  version: true

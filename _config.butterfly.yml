@@ -243,7 +243,9 @@ instantpage: true
 inject:
   head:
     - <link rel="stylesheet" href="/css/custom.css">
-  bottom: []
+  bottom:
+    - <script src="/js/ocean-background.js"></script>
+    - <script src="/js/cursor-trail.js"></script>
 
 CDN:
   internal_provider: local

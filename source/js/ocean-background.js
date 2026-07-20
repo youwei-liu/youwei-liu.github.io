@@ -13,6 +13,7 @@
   const fishColors = ['#7fd8d2', '#a5e3d9', '#e3b879', '#89c9d2', '#d7e8cf'];
   const fish = [];
   const bubbles = [];
+  const wakes = [];
   let width = 0;
   let height = 0;
   let scale = 1;
@@ -85,6 +86,93 @@
     context.restore();
   };
 
+  const waterSurfaceY = (x, time, layer = 0) => {
+    const base = height * (.075 + layer * .025);
+    const broad = Math.sin(x / (150 + layer * 26) + time * (.00055 - layer * .00008)) * (8 - layer);
+    const detail = Math.sin(x / (58 + layer * 15) - time * (.0008 + layer * .00006)) * (3.5 - layer * .45);
+    return base + broad + detail;
+  };
+
+  const drawSurfaceLayer = (time, layer, alpha) => {
+    context.beginPath();
+    for (let x = -20; x <= width + 20; x += 7) {
+      const y = waterSurfaceY(x, time, layer);
+      if (x === -20) context.moveTo(x, y);
+      else context.lineTo(x, y);
+    }
+    context.lineTo(width + 20, 0);
+    context.lineTo(-20, 0);
+    context.closePath();
+    const surfaceGradient = context.createLinearGradient(0, 0, 0, height * .15);
+    surfaceGradient.addColorStop(0, `rgba(218, 255, 249, ${alpha})`);
+    surfaceGradient.addColorStop(1, 'rgba(126, 216, 210, 0)');
+    context.fillStyle = surfaceGradient;
+    context.fill();
+
+    context.beginPath();
+    for (let x = -20; x <= width + 20; x += 7) {
+      const y = waterSurfaceY(x, time, layer);
+      if (x === -20) context.moveTo(x, y);
+      else context.lineTo(x, y);
+    }
+    context.strokeStyle = `rgba(228, 255, 251, ${alpha * 1.5})`;
+    context.lineWidth = layer === 0 ? 1.35 : .8;
+    context.shadowColor = 'rgba(184, 245, 237, .28)';
+    context.shadowBlur = 5;
+    context.stroke();
+    context.shadowBlur = 0;
+  };
+
+  const drawSurface = time => {
+    context.save();
+    context.globalCompositeOperation = 'screen';
+    drawSurfaceLayer(time, 1, .07);
+    drawSurfaceLayer(time, 0, .11);
+    for (let index = 0; index < 12; index += 1) {
+      const x = (index * width / 11 + time * .013) % (width + 40) - 20;
+      const y = waterSurfaceY(x, time, 0);
+      const radius = 1 + (index % 3) * .45;
+      context.beginPath();
+      context.arc(x, y, radius, 0, Math.PI * 2);
+      context.fillStyle = `rgba(234, 255, 251, ${.13 + index % 4 * .035})`;
+      context.fill();
+    }
+    context.restore();
+  };
+
+  const addWake = item => {
+    const speed = Math.hypot(item.vx, item.vy);
+    if (speed < 1.35 || Math.random() > .18 || wakes.length > 45) return;
+    wakes.push({
+      x: item.x - item.vx * item.size * .8,
+      y: item.y - item.vy * item.size * .8,
+      angle: Math.atan2(item.vy, item.vx),
+      size: item.size * .8,
+      life: 1
+    });
+  };
+
+  const drawWakes = () => {
+    for (let index = wakes.length - 1; index >= 0; index -= 1) {
+      const wake = wakes[index];
+      wake.life -= .025;
+      if (wake.life <= 0) { wakes.splice(index, 1); continue; }
+      wake.size += .32;
+      context.save();
+      context.translate(wake.x, wake.y);
+      context.rotate(wake.angle);
+      context.strokeStyle = `rgba(190, 240, 235, ${wake.life * .15})`;
+      context.lineWidth = .8;
+      context.beginPath();
+      context.moveTo(-wake.size * .2, 0);
+      context.quadraticCurveTo(-wake.size, wake.size * .45, -wake.size * 1.65, wake.size * .55);
+      context.moveTo(-wake.size * .2, 0);
+      context.quadraticCurveTo(-wake.size, -wake.size * .45, -wake.size * 1.65, -wake.size * .55);
+      context.stroke();
+      context.restore();
+    }
+  };
+
   const drawBubble = bubble => {
     bubble.y -= bubble.speed;
     bubble.x += bubble.drift;
@@ -126,6 +214,7 @@
     item.vy *= .992;
     item.x += item.vx;
     item.y += item.vy;
+    addWake(item);
 
     const angle = Math.atan2(item.vy, item.vx);
     const tailWave = Math.sin(time * .012 + item.phase) * .35;
@@ -156,7 +245,9 @@
   const animate = time => {
     context.clearRect(0, 0, width, height);
     drawWater(time);
+    drawSurface(time);
     bubbles.forEach(drawBubble);
+    drawWakes();
     fish.forEach((item, index) => drawFish(item, index, time));
     frame = requestAnimationFrame(animate);
   };

@@ -39,7 +39,7 @@
         fish.push({
           x: random(0, width),
           y: random(height * .2, height * .86),
-          vx: random(.55, 1.35),
+          vx: random(.65, 1.5),
           vy: random(-.25, .25),
           size: random(7, 15),
           phase: random(0, Math.PI * 2),
@@ -192,7 +192,7 @@
     const dx = targetX - item.x;
     const dy = targetY - item.y;
     const distance = Math.max(1, Math.hypot(dx, dy));
-    const acceleration = pointerActive ? .026 : .012;
+    const acceleration = pointerActive ? .03 : .014;
     item.vx += dx / distance * acceleration;
     item.vy += dy / distance * acceleration;
 
@@ -207,7 +207,7 @@
     item.vx += separation.x;
     item.vy += separation.y;
 
-    const maxSpeed = pointerActive ? 3.15 : 1.75;
+    const maxSpeed = pointerActive ? 3.55 : 2;
     const speed = Math.max(.01, Math.hypot(item.vx, item.vy));
     if (speed > maxSpeed) { item.vx = item.vx / speed * maxSpeed; item.vy = item.vy / speed * maxSpeed; }
     item.vx *= .992;

@@ -178,6 +178,14 @@ wordcount:
   min2read: true
   total_wordcount: true
 
+math:
+  use: mathjax
+  per_page: true
+  hide_scrollbar: false
+  mathjax:
+    enableMenu: true
+    tags: none
+
 busuanzi:
   site_uv: true
   site_pv: true

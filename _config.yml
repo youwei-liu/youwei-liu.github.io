@@ -35,6 +35,15 @@ post_asset_folder: false
 relative_link: false
 future: true
 syntax_highlighter: highlight.js
+markdown:
+  render:
+    html: true
+    xhtmlOut: true
+    breaks: false
+    linkify: true
+    typographer: true
+  plugins:
+    - markdown-it-mathjax3
 highlight:
   line_number: true
   auto_detect: false

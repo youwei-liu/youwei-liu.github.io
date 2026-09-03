@@ -66,6 +66,11 @@
   font-weight: 650;
 }
 
+.math-block {
+  overflow-x: auto;
+  text-align: center;
+}
+
 @media screen and (min-width: 769px) {
   #recent-posts > .recent-post-item {
     min-height: 260px;

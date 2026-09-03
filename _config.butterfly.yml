@@ -254,6 +254,7 @@ inject:
   bottom:
     - <script src="/js/ocean-background.js"></script>
     - <script src="/js/cursor-trail.js"></script>
+    - <script src="/js/article-toc.js"></script>
 
 CDN:
   internal_provider: local

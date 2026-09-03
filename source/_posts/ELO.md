@@ -15,6 +15,8 @@ updated: 2026-09-02 18:00:00
 
 # ELO **等级分**
 
+<div class="article-toc-inline" data-toc-title="本文目录"></div>
+
 ## 基本介绍
 
 Elo 最初由物理学家 Arpad Elo 为国际象棋设计，本质上是 BT 模型的一个 **增量更新（Online/Dynamic）工程实现**。

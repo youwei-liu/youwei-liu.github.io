@@ -66,6 +66,35 @@
   font-weight: 650;
 }
 
+.article-toc-inline {
+  margin: 1.5rem 0 2rem;
+  padding: 1rem 1.25rem;
+  border-left: 3px solid var(--ly-primary-color, #4d7c8a);
+  background: rgba(77, 124, 138, .06);
+}
+
+.article-toc-inline .inline-toc-title {
+  margin-bottom: .6rem;
+  font-weight: 650;
+}
+
+.article-toc-inline ol {
+  margin: 0;
+  padding-left: 1.4rem;
+}
+
+.article-toc-inline li + li {
+  margin-top: .25rem;
+}
+
+.article-toc-inline a {
+  color: var(--font-color);
+}
+
+.article-toc-inline a:hover {
+  color: var(--ly-primary-color, #4d7c8a);
+}
+
 .math-block {
   overflow-x: auto;
   text-align: center;

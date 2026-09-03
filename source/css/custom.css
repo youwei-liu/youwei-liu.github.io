@@ -89,6 +89,16 @@
   list-style: none;
 }
 
+.article-toc-inline .manual-numbering ul {
+  padding-left: 1.25rem;
+  list-style: none;
+}
+
+.article-toc-inline .inline-toc-level-1 > span,
+.article-toc-inline .inline-toc-level-1 > a {
+  font-weight: 650;
+}
+
 .article-toc-inline li + li {
   margin-top: .25rem;
 }

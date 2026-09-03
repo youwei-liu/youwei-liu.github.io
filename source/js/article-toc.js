@@ -10,7 +10,14 @@
       .filter(heading => heading !== container && !heading.closest('.article-toc-inline'));
     if (!headings.length) { container.remove(); return; }
 
-    const list = document.createElement('ol');
+    const manualNumberPattern = /^(?:\d+(?:\.\d+)*[.、．]|Q\d+[：:.])/i;
+    const hasManualNumbering = headings.some(heading =>
+      manualNumberPattern.test(heading.textContent.trim())
+    );
+    const list = document.createElement(hasManualNumbering ? 'ul' : 'ol');
+    if (hasManualNumbering) list.className = 'manual-numbering';
+    let currentSectionItem = null;
+
     headings.forEach(heading => {
       if (!heading.id) return;
       const item = document.createElement('li');
@@ -18,7 +25,18 @@
       link.href = `#${heading.id}`;
       link.textContent = heading.textContent.trim();
       item.appendChild(link);
-      list.appendChild(item);
+
+      if (heading.tagName === 'H3' && currentSectionItem) {
+        let childList = currentSectionItem.querySelector(':scope > ul');
+        if (!childList) {
+          childList = document.createElement('ul');
+          currentSectionItem.appendChild(childList);
+        }
+        childList.appendChild(item);
+      } else {
+        list.appendChild(item);
+        currentSectionItem = heading.tagName === 'H2' ? item : null;
+      }
     });
 
     const title = document.createElement('div');

@@ -78,9 +78,15 @@
   font-weight: 650;
 }
 
-.article-toc-inline ol {
+.article-toc-inline ol,
+.article-toc-inline ul {
   margin: 0;
   padding-left: 1.4rem;
+}
+
+.article-toc-inline .manual-numbering {
+  padding-left: 0;
+  list-style: none;
 }
 
 .article-toc-inline li + li {

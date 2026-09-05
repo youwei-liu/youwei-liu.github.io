@@ -6,7 +6,7 @@ tags:
   - 测试
 description: 介绍 ELO 等级分与 Bradley-Terry 模型的核心公式、参数含义、最大似然求解及其在奖励模型中的应用。
 cover: /img/avatar.jpg
-abbrlink: dc941e42
+abbrlink: dc941e43
 date: 2026-09-05 18:00:00
 updated: 2026-09-05 18:00:00
 toc_number: false

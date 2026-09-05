@@ -21,3 +21,4 @@ toc_number: false
 Elo 最初由物理学家 Arpad Elo 为国际象棋设计，本质上是 BT 模型的一个 **增量更新（Online/Dynamic）工程实现**。
 
 在 Elo 等级分系统中，A 战胜 B 的期望胜率 $P(A>B)$ 是基于 **双方积分之差**（$R_B - R_A$），通过 **Logistic 函数（逻辑斯蒂函数）** 计算出来的，**计算公式如下：**
+asd

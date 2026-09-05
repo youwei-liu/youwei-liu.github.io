@@ -116,6 +116,25 @@
   text-align: center;
 }
 
+.post-content mjx-container {
+  font-size: 1em;
+}
+
+.text-highlight-red {
+  color: #d93025;
+  font-weight: 650;
+}
+
+@media screen and (min-width: 901px) {
+  #content-inner.layout {
+    max-width: 1600px;
+  }
+
+  #content-inner.layout > div:first-child {
+    width: 82%;
+  }
+}
+
 @media screen and (min-width: 769px) {
   #recent-posts > .recent-post-item {
     min-height: 260px;

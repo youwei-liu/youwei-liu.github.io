@@ -21,7 +21,7 @@ updated: 2026-09-06 18:00:00
 
 # OPD
 
-## 1. 基本原理
+## 基本原理
 
 <strong>传统离线蒸馏（SFT）：</strong>
 
@@ -41,13 +41,15 @@ updated: 2026-09-06 18:00:00
 
 <strong>主流三段式做法：</strong>
 
-1. <strong>采样（Rollout）</strong>：学生模型 $\pi_\theta$ 对给定 Prompt 自主生成完整 Rollout $y\sim\pi_\theta(\cdot\mid x)$。
-2. <strong>评分（Scoring）</strong>：教师模型 $\pi_T$ 对学生生成的每个 Token 计算 log 概率，作为逐 Token 的监督信号。
-3. <strong>更新（Update）</strong> ：基于教师信号计算损失，更新学生模型参数
+<strong>1. 采样（Rollout）</strong>：学生模型 $\pi_\theta$ 对给定 Prompt 自主生成完整 Rollout $y\sim\pi_\theta(\cdot\mid x)$。
 
-## 2. 工程实现细节：
+<strong>2. 评分（Scoring）</strong>：教师模型 $\pi_T$ 对学生生成的每个 Token 计算 log 概率，作为逐 Token 的监督信号。
 
-### 2.1 Teacher & Student选型
+<strong>3. 更新（Update）</strong> ：基于教师信号计算损失，更新学生模型参数
+
+## 工程实现细节：
+
+### Teacher & Student 选型
 
 - <strong>Teacher 选择</strong>：通常选择同系列或同词表（Tokenizer）的高性能强模型（例如使用 Llama-3-70B 蒸馏给 Llama-3-8B）。
 - <strong>Student 选择</strong>：选择架构一致（或兼容）、参数量较小（如 1B~8B）的模型。
@@ -55,15 +57,15 @@ updated: 2026-09-06 18:00:00
   - <strong>理想情况（同词表）</strong>：Teacher 和 Student 共享相同的词表，可以直接逐 Token 对齐概率分布（Logits）。
   - <strong>非理想情况（跨词表）：</strong>
 
-### 2.2 训练数据构建
+### 训练数据构建
 
-### 2.3 优化方式（损失函数）
-
-
+### 优化方式（损失函数）
 
 
 
-## 3. QA环节
+
+
+## QA 环节
 
 ### <span class="text-highlight-blue" style="color: #274DEA; font-weight: 650;">Q1：不同系列，跨词表如何处理Token之间的概率对齐？</span>
 
@@ -75,7 +77,7 @@ updated: 2026-09-06 18:00:00
 
 <strong>一句话总结：</strong>只针对单个 Token（即概率分布退化为只有一个点，且归一化为 1.0 时），<strong>KL 散度在数值和梯度上完全等价于交叉熵（Cross-Entropy）</strong>。
 
-1. <strong>数学推导</strong>
+<strong>1. 数学推导</strong>
 
 根据信息论的标准定义，KL 散度（Kullback-Leibler Divergence）与交叉熵（Cross-Entropy, CE）和熵（Entropy, H）的关系是：
 
@@ -105,12 +107,11 @@ $$
 \text{KL}(P \parallel Q) = \text{CE}(P, Q) - 0 = \mathbf{\text{CE}(P, Q)}
 $$
 
-1. <strong>Loss公式推导</strong>
+<strong>2. Loss公式推导</strong>
 
 展开两者的 Loss 表达式：
 
 <strong>（1） 交叉熵 Loss (</strong>$\mathcal{L}_{\text{CE}}$<strong>)：</strong>
-
 $$
 \mathcal{L}_{\text{CE}} = - \sum_{v \in V} P_{\text{Teacher}}(v) \log P_{\text{Student}}(v) = - \mathbf{1.0 \cdot \log P_{\text{Student}}(y_t)}
 $$
@@ -135,14 +136,14 @@ $$
 
 <strong>具体步骤：</strong>
 
-1. <strong>Student 生成轨迹</strong>：Student 针对 Prompt $x$ 采样生成了一条长为 $T$ 的文本轨迹 $Y = [y_1, y_2, \dots, y_T]$。
-2. <strong>Teacher 逐 Token 评估</strong>：Teacher 对这条轨迹计算每个位置的 Log-Prob：
+<strong>1. Student 生成轨迹</strong>：Student 针对 Prompt $x$ 采样生成了一条长为 $T$ 的文本轨迹 $Y = [y_1, y_2, \dots, y_T]$。
 
+<strong>2. Teacher 逐 Token 评估</strong>：Teacher 对这条轨迹计算每个位置的 Log-Prob：
 $$
 [\log P_{\text{teacher}}(y_1), \log P_{\text{teacher}}(y_2), \dots, \log P_{\text{teacher}}(y_T)]
 $$
 
-1. <strong>聚合为整条数据的 Reward (</strong>$R$<strong>)</strong>：
+<strong>3. 聚合为整条数据的 Reward (</strong>$R$<strong>)</strong>：
 
 通过求平均或加权累加，得到整条轨迹在 Teacher 眼里的“整体合理度得分”：
 
@@ -150,7 +151,7 @@ $$
 R(x, Y) = \frac{1}{T} \sum_{t=1}^{T} \log P_{\text{teacher}}(y_t \mid x, y_{<t})
 $$
 
-1. <strong>送入标准 GRPO 流程</strong>：
+<strong>4. 送入标准 GRPO 流程</strong>：
 
 Student 针对同一个 Prompt 采出了 $G$ 条轨迹（比如 $Y_1, Y_2, \dots, Y_G$），得到了 $G$ 个整体得分 $[R_1, R_2, \dots, R_G]$。
 然后按照 GRPO 的标准公式做组内归一化（Z-score Standardize），算出每条轨迹的 <strong>Group Advantage (</strong>$A_i$<strong>)</strong>，最后更新 Student。

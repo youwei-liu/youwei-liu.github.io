@@ -77,7 +77,7 @@ updated: 2026-09-06 18:00:00
 
 <strong>一句话总结：</strong>只针对单个 Token（即概率分布退化为只有一个点，且归一化为 1.0 时），<strong>KL 散度在数值和梯度上完全等价于交叉熵（Cross-Entropy）</strong>。
 
-<strong>1. 数学推导</strong>
+<strong><span class="text-highlight-purple" style="color: #831FFC; font-weight: 650;">1. 数学推导</span></strong>
 
 根据信息论的标准定义，KL 散度（Kullback-Leibler Divergence）与交叉熵（Cross-Entropy, CE）和熵（Entropy, H）的关系是：
 
@@ -107,7 +107,7 @@ $$
 \text{KL}(P \parallel Q) = \text{CE}(P, Q) - 0 = \mathbf{\text{CE}(P, Q)}
 $$
 
-<strong>2. Loss公式推导</strong>
+<strong><span class="text-highlight-purple" style="color: #831FFC; font-weight: 650;">2. Loss公式推导</span></strong>
 
 展开两者的 Loss 表达式：
 
@@ -130,20 +130,20 @@ $$
 
 <strong>而OPD (</strong>$K=1$<strong>) 这种逐 Token 的打分对于上述情况一般有两种实现手段：</strong>
 
-<strong><span class="text-highlight-purple" style="color: #831FFC; font-weight: 650;">（1）累加/平均化（Token-Level $\rightarrow$ Sequence-Level Reward）</span></strong>
+<strong><span class="text-highlight-purple" style="color: #831FFC; font-weight: 650;">1. 累加/平均化（Token-Level $\rightarrow$ Sequence-Level Reward）</span></strong>
 
 标准 GRPO 框架下最常用的做法——<strong>把整条轨迹上每一个 Token 的 Teacher 对数概率（Log-Prob）累加或求平均，压缩成一个整体标量分值</strong> $R$。
 
 <strong>具体步骤：</strong>
 
-<strong>1. Student 生成轨迹</strong>：Student 针对 Prompt $x$ 采样生成了一条长为 $T$ 的文本轨迹 $Y = [y_1, y_2, \dots, y_T]$。
+<strong>（1）Student 生成轨迹</strong>：Student 针对 Prompt $x$ 采样生成了一条长为 $T$ 的文本轨迹 $Y = [y_1, y_2, \dots, y_T]$。
 
-<strong>2. Teacher 逐 Token 评估</strong>：Teacher 对这条轨迹计算每个位置的 Log-Prob：
+<strong>（2）Teacher 逐 Token 评估</strong>：Teacher 对这条轨迹计算每个位置的 Log-Prob：
 $$
 [\log P_{\text{teacher}}(y_1), \log P_{\text{teacher}}(y_2), \dots, \log P_{\text{teacher}}(y_T)]
 $$
 
-<strong>3. 聚合为整条数据的 Reward (</strong>$R$<strong>)</strong>：
+<strong>（3）聚合为整条数据的 Reward (</strong>$R$<strong>)</strong>：
 
 通过求平均或加权累加，得到整条轨迹在 Teacher 眼里的“整体合理度得分”：
 
@@ -151,12 +151,12 @@ $$
 R(x, Y) = \frac{1}{T} \sum_{t=1}^{T} \log P_{\text{teacher}}(y_t \mid x, y_{<t})
 $$
 
-<strong>4. 送入标准 GRPO 流程</strong>：
+<strong>（4）送入标准 GRPO 流程</strong>：
 
 Student 针对同一个 Prompt 采出了 $G$ 条轨迹（比如 $Y_1, Y_2, \dots, Y_G$），得到了 $G$ 个整体得分 $[R_1, R_2, \dots, R_G]$。
 然后按照 GRPO 的标准公式做组内归一化（Z-score Standardize），算出每条轨迹的 <strong>Group Advantage (</strong>$A_i$<strong>)</strong>，最后更新 Student。
 
-<strong><span class="text-highlight-purple" style="color: #831FFC; font-weight: 650;">（2）Token-Level Process Reward（逐 Token 的过程奖励）</span></strong>
+<strong><span class="text-highlight-purple" style="color: #831FFC; font-weight: 650;">2. Token-Level Process Reward（逐 Token 的过程奖励）</span></strong>
 
 若希望保留“<strong>某些 Token 给正反馈，某些 Token 给负反馈</strong>”的精细度（比如某个推导步骤写错了，只打压错的那个 Step/Token），则不能将得分合并成一个标量，工程上可以将GRPO扩展为<strong>Token-Level GRPO</strong>
 
@@ -198,3 +198,88 @@ $$
 | <strong>控制精细度</strong>     | <strong>极高</strong>。能精确惩罚导致推理走偏的那<strong>某一个/某几个错词</strong>（Process-level Reward）。 | <strong>稍粗</strong>。整条轨迹“一荣俱荣，一损俱损”（Outcome-level Reward）。 |
 | <strong>方差与稳定性</strong>   | 容易受单 Token 概率波动的干扰，需要较大 Group Size（如 $G \ge 8$）来平抑方差。 | 经过整条轨迹求平均后，得分方差小，训练非常稳定。             |
 | <strong>适用场景</strong>       | <strong>长链条推理（CoT / Reasoning）、代码编写</strong>（单个逻辑节点的对错至关重要）。 | <strong>常规对话、摘要生成、格式化文本生成</strong>。        |
+
+
+
+### <span class="text-highlight-blue" style="color: #274DEA; font-weight: 650;">Q7：K=50 时，损失函数推导公式（或软标签下 KL 散度与交叉熵损失的关系是什么？）</span>
+
+**一句话总结：**<span class="text-highlight-red" style="color: #d93025; font-weight: 650;">深度学习的梯度下降优化中，最小化 KL 散度，数学上完全等价于最小化加权交叉熵（Cross-Entropy）</span>
+
+<strong><span class="text-highlight-purple" style="color: #831FFC; font-weight: 650;">1. 前置工作</span></strong>
+
+对于生成序列中的某一个 Token 位置 $t$：
+
+- **Teacher 的截断重归一化分布** $P_T$：
+
+在 Top-K 集合 $\mathcal{K}_t$ 内，Teacher 的概率为 $\tilde{P}_{\text{teacher}}(i)$；在集合外，概率为 $0$；满足 $\sum_{i \in \mathcal{K}_t} \tilde{P}_{\text{teacher}}(i) = 1$。
+
+- **Student 的预测分布** $P_S$：Student 在全词表 $V$ 上的预测概率为 $P_{\text{student}}(i)$。
+
+<strong><span class="text-highlight-purple" style="color: #831FFC; font-weight: 650;">2. 数学推导</span></strong>
+
+（1）单个 Token 位置 $t$ 的标准 KL 散度公式
+
+根据离散 KL 散度的定义，在位置 $t$：
+
+$$
+\text{KL}(P_T \parallel P_S)_t = \sum_{i \in V} P_T(i) \cdot \log \frac{P_T(i)}{P_S(i)}
+$$
+
+（2）将求和范围缩小到 Top-K 集合 $\mathcal{K}_t$
+
+因为在 Top-K 集合之外，Teacher 的概率 $P_T(i) = 0$，根据 $0 \cdot \log(0) = 0$，集合外的项全部归零：
+
+$$
+\text{KL}(P_T \parallel P_S)_t = \sum_{i \in \mathcal{K}_t} \tilde{P}_{\text{teacher}}(i) \cdot \log \frac{\tilde{P}_{\text{teacher}}(i)}{P_{\text{student}}(i)}
+$$
+
+（3）公式拆分
+
+将对数项展开为两项相减：
+
+$$
+\text{KL}(P_T \parallel P_S)_t = \sum_{i \in \mathcal{K}_t} \tilde{P}_{\text{teacher}}(i) \cdot \left( \log \tilde{P}_{\text{teacher}}(i) - \log P_{\text{student}}(i) \right)
+$$
+
+再将求和符号分配进去：
+
+$$
+\text{KL}(P_T \parallel P_S)_t = \underbrace{\sum_{i \in \mathcal{K}_t} \tilde{P}_{\text{teacher}}(i) \log \tilde{P}_{\text{teacher}}(i)}_{\text{第一项：Teacher 的负熵 } -H(P_T)} - \underbrace{\sum_{i \in \mathcal{K}_t} \tilde{P}_{\text{teacher}}(i) \log P_{\text{student}}(i)}_{\text{第二项：交叉熵 } \text{CE}(P_T, P_S)}
+$$
+
+<strong><span class="text-highlight-purple" style="color: #831FFC; font-weight: 650;">3. 公式化简</span></strong>
+
+在训练 Student 模型时，通过计算 Loss 关于 **Student 参数** $\theta$ 的梯度（$\nabla_\theta \mathcal{L}$）来更新模型。
+
+- **第一项**：只包含 Teacher 算出来的概率 $\tilde{P}_{\text{teacher}}$，**完全不包含 Student 的参数**$\theta$，反向传播求导过程中常为0。
+
+$$
+\sum_{i \in \mathcal{K}_t} \tilde{P}_{\text{teacher}}(i) \log \tilde{P}_{\text{teacher}}(i)
+$$
+
+- **第二项**：包含了 Student 的预测概率 $P_{\text{student}}(i)$，是梯度的唯一来源
+
+$$
+- \sum_{i \in \mathcal{K}_t} \tilde{P}_{\text{teacher}}(i) \log P_{\text{student}}(i)
+$$
+
+因此，单个 Token 位置的等效 Loss 就是：
+
+$$
+\mathcal{L}_t \equiv - \sum_{i \in \mathcal{K}_t} \tilde{P}_{\text{teacher}}(i \mid y_{<t}) \cdot \log P_{\text{student}}(i \mid y_{<t})
+$$
+
+将整条序列 $T$ 个位置的 Loss 累加起来，就得到了最终的公式：
+
+$$
+\mathcal{L}_{\text{Top-K KL}} = - \sum_{t=1}^{T} \sum_{i \in \mathcal{K}_t} \tilde{P}_{\text{teacher}}(i \mid y_{<t}) \cdot \log P_{\text{student}}(i \mid y_{<t})
+$$
+
+<strong>总结：</strong>深度学习的梯度下降优化中，最小化 KL 散度，数学上完全等价于最小化加权交叉熵
+
+Teacher 给出的概率 $\tilde{P}_{\text{teacher}}(i)$ 充当了<strong>软标签权重（Soft Label Weights）</strong>：
+
+> 如果某个 Token Teacher 认为概率很大（比如 0.8），Student 预测它的 $-\log P_{\text{student}}$ 就会乘上 0.8 的大权重；
+>
+> 如果某个 Token Teacher 认为概率很小（比如 0.01），就会只乘上 0.01 的小权重。
+

@@ -21,22 +21,20 @@ updated: 2026-09-06 18:00:00
 
 # OPD
 
-## 基本原理
+## 1. 基本原理
 
 <strong>传统离线蒸馏（SFT）：</strong>
 
 - <strong>核心做法：</strong>使用强 Teacher 模型针对输入生成答案样本，存入静态数据集，然后用交叉熵 Loss 训练 Student 模型。
 
 - <strong>潜在风险：</strong>
+- <strong>（1）分布偏移/暴露偏差：</strong>离线蒸馏要求 Student 去拟合 Teacher 产生的字符串轨迹，由于Stu和Teacher模型概率分布存在偏差，自回归推理过程，一旦输出了Teacher未预测的Token，陷入未训练过的“分布外状态（OOD）”，导致错误快速累积，即暴露偏差（Exposure Bias）。
 
-  - <strong>（1）分布偏移/暴露偏差：</strong>离线蒸馏要求 Student 去拟合 Teacher 产生的字符串轨迹，由于Stu和Teacher模型概率分布存在偏差，自回归推理过程，一旦输出了Teacher未预测的Token，陷入未训练过的“分布外状态（OOD）”，导致错误快速累积，即暴露偏差（Exposure Bias）。
-
-  - <strong>（2）数据多样性陷阱：</strong>离线蒸馏数据固定，为覆盖Stu推理可能遇到情况，需要大量且多样性足够的训练数据
+- <strong>（2）数据多样性陷阱：</strong>离线蒸馏数据固定，为覆盖Stu推理可能遇到情况，需要大量且多样性足够的训练数据
 
 <strong>在线策略蒸馏（On-Policy Distillation, OPD）：</strong>
 
-- <strong>核心做法：</strong>让学生在自己生成的轨迹上接受教师的逐 Token 监督，来逼近 Teacher 的概率分布。
-
+- **核心做法：**<span class="text-highlight-red" style="color: #d93025; font-weight: 650;">让学生在自己生成的轨迹上接受教师的逐 Token 监督，来逼近 Teacher 的概率分布</span>
 - <strong>OPD优势：</strong>能够解决分布偏移，即使在犯错的分布区域内，仍然能够纠正修复
 
 <strong>主流三段式做法：</strong>
@@ -47,9 +45,9 @@ updated: 2026-09-06 18:00:00
 
 <strong>3. 更新（Update）</strong> ：基于教师信号计算损失，更新学生模型参数
 
-## 工程实现细节：
+## 2. 工程实现细节：
 
-### Teacher & Student 选型
+### 2.1 Teacher & Student 选型
 
 - <strong>Teacher 选择</strong>：通常选择同系列或同词表（Tokenizer）的高性能强模型（例如使用 Llama-3-70B 蒸馏给 Llama-3-8B）。
 - <strong>Student 选择</strong>：选择架构一致（或兼容）、参数量较小（如 1B~8B）的模型。
@@ -57,15 +55,51 @@ updated: 2026-09-06 18:00:00
   - <strong>理想情况（同词表）</strong>：Teacher 和 Student 共享相同的词表，可以直接逐 Token 对齐概率分布（Logits）。
   - <strong>非理想情况（跨词表）：</strong>
 
-### 训练数据构建
+### 2.2 训练数据构建
 
-### 优化方式（损失函数）
+### 2.3 优化方式（损失函数）
+
+| 维度     | Top-K 软标签蒸馏 ($K=50/100$)                                | Target-Only 轨迹蒸馏 ($K=1$)                                 |
+| -------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| 训练本质 | 实现加强版 SFT，KL 拟合 Token 概率分布                       | 逐 Token 粒度的打分器/奖励模型（Token-level Reward Model），策略梯度优化 |
+| 损失函数 | $\mathcal{L}_{\text{Top-K KL}} = - \sum_{t=1}^{T} \sum_{i \in \mathcal{K}_t} \tilde{P}_{\text{teacher}}(i \mid y_{<t}) \cdot \log P_{\text{student}}(i \mid y_{<t})$ | $\mathcal{L}_{K=1 \text{ (PG)}} = - \frac{1}{G} \sum_{i=1}^{G} \sum_{t=1}^{T} A_{i,t} \cdot \log P_{\text{student}}(y_{i,t} \mid y_{i,<t})$ |
+| 特定要求 | 严格要求同构词表                                             | 无                                                           |
+| 核心优势 | 能够保留 Teacher 认为潜在正确的多个分支（Dark Knowledge，黑暗知识），引导 Student 学习分布的“形态”。 | （1）天然支持异构词表，只要能计算 Student 生成文本在 Teacher 下的对数似然即可；<br />（2）显存与通信开销极小。 |
+| 工程应用 | （1）同系列/同 Tokenizer 模型压缩：Top-K 无缝对齐；<br />（2）高推理精度/低幻觉类任务：在代码生成、数学推理等领域，Top-K 能够严格约束概率分布形态，让 Student 迅速学习到 Teacher 在关键推理节点上的分化概率，减少胡言乱语。 | （1）跨架构蒸馏：如 Qwen -> Llama，避开 Tokenizer 冲突；<br />（2）强化学习：考虑到强化学习训练节点通信问题，K=1 能够作为 RM 打分器配合 GRPO 等算法实现，吞吐量会非常大。 |
+|          |                                                              |                                                              |
+
+#### 2.3.1 Top-K 软标签蒸馏 (K=50/100)：加强版 SFT
+
+<strong>核心做法：</strong>在前向传播时，对于每个生成的 Token 位置 $t$，Teacher 计算全词表（如 $128k$ 维）的 Logits，但<strong>只挑选 Teacher 自己概率最高的 Top-K 个 Token</strong>（如 $K=50$），将其 Logits 和对应的 Token IDs 传输给 Student。
+
+<strong>损失函数：</strong>整条序列的 <strong>Top-K KL 散度损失</strong> 为每个 Token 位置上 KL 散度的累加（展开并忽略仅与 Teacher 相关的常量项后，本质为<strong>加权 Soft-Label 交叉熵</strong>）：
+$$
+\mathcal{L}_{\text{Top-K KL}} = - \sum_{t=1}^{T} \sum_{i \in \mathcal{K}_t} \tilde{P}_{\text{teacher}}(i \mid y_{<t}) \cdot \log P_{\text{student}}(i \mid y_{<t})
+$$
+
+#### 2.3.2 Target-Only 轨迹蒸馏 (K=1)：往往作为 RM 打分器
+
+<strong>核心做法：</strong>由于轨迹是 Student 已经采样生成出来的字符串 $Y = [y_1, y_2, \dots, y_T]$，<strong>不计算、不传输任何全词表的 Top-K 分布，只保留轨迹上实际被采样的 1 个 Token（即 $K=1$）</strong>。
+
+损失函数：策略梯度优化（简化版强化学习函数，无KL、无CLIp裁剪）
+
+ ① 基础版 Policy Gradient Loss：
+
+$$
+\mathcal{L}_{K=1 \text{ (PG)}} = - \frac{1}{G} \sum_{i=1}^{G} \sum_{t=1}^{T} A_{i,t} \cdot \log P_{\text{student}}(y_{i,t} \mid y_{i,<t})
+$$
+
+② 工业级 PPO/GRPO Clip 保护 Loss：
+
+为了防止单步更新幅度过大导致模型崩盘，引入重要性采样比率 $r_{i,t} = \frac{P_{\text{student\_new}}(y_{i,t} \mid y_{i,<t})}{P_{\text{student\_old}}(y_{i,t} \mid y_{i,<t})}$：
+
+$$
+\mathcal{L}_{K=1 \text{ (GRPO)}} = - \frac{1}{G} \sum_{i=1}^{G} \sum_{t=1}^{T} \min \left( r_{i,t} A_{i,t}, \, \operatorname{clip}(r_{i,t}, 1-\epsilon, 1+\epsilon) A_{i,t} \right)
+$$
 
 
 
-
-
-## QA 环节
+## 3. QA 环节
 
 ### <span class="text-highlight-blue" style="color: #274DEA; font-weight: 650;">Q1：不同系列，跨词表如何处理Token之间的概率对齐？</span>
 
@@ -282,4 +316,3 @@ Teacher 给出的概率 $\tilde{P}_{\text{teacher}}(i)$ 充当了<strong>软标�
 > 如果某个 Token Teacher 认为概率很大（比如 0.8），Student 预测它的 $-\log P_{\text{student}}$ 就会乘上 0.8 的大权重；
 >
 > 如果某个 Token Teacher 认为概率很小（比如 0.01），就会只乘上 0.01 的小权重。
-

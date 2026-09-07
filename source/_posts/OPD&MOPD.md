@@ -41,7 +41,7 @@ updated: 2026-09-07 18:00:00
 
 <strong>1. 采样（Rollout）</strong>：学生模型 $\pi_\theta$ 对给定 Prompt 自主生成完整 Rollout $y\sim\pi_\theta(\cdot\mid x)$。
 
-<strong>2. 评分（Scoring）</strong>：教师模型 $\pi_T$ 对学生生成的每个 Token 计算 log 概率，作为逐 Token 的监督信号。
+<strong>2. 评分（Scoring）</strong>：Teacher 模型针对 Student自己产生的轨迹进行监督（如<span class="text-highlight-red" style="color: #d93025; font-weight: 650;">计算 Logits 散度</span>或<span class="text-highlight-red" style="color: #d93025; font-weight: 650;">提供 Token 级别的软标签</span>）。
 
 <strong>3. 更新（Update）</strong> ：基于教师信号计算损失，更新学生模型参数
 

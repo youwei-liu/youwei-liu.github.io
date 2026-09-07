@@ -1,5 +1,5 @@
 ---
-title: GRPO（Group Relative Policy Optimization）学习笔记
+title: GRPO（Group Relative Policy Optimization）
 categories:
   - 学习笔记
 tags:

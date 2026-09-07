@@ -41,9 +41,9 @@ updated: 2026-09-07 18:00:00
 
 <strong>1. 采样（Rollout）</strong>：学生模型 $\pi_\theta$ 对给定 Prompt 自主生成完整 Rollout $y\sim\pi_\theta(\cdot\mid x)$。
 
-<strong>2. 评分（Scoring）</strong>：Teacher 模型针对 Student自己产生的轨迹进行监督（如<span class="text-highlight-red" style="color: #d93025; font-weight: 650;">计算 Logits 散度</span>或<span class="text-highlight-red" style="color: #d93025; font-weight: 650;">提供 Token 级别的软标签</span>）。
+<strong>2. 评分（Scoring）</strong>：Teacher 模型针对 Student自己产生的轨迹进行监督（如<span class="text-highlight-red" style="color: #d93025; font-weight: 650;">提供 Token 级别的软标签</span>或<span class="text-highlight-red" style="color: #d93025; font-weight: 650;">Token Logits 标量</span>）。
 
-<strong>3. 更新（Update）</strong> ：基于教师信号计算损失，更新学生模型参数
+<strong>3. 更新（Update）</strong> ：基于教师信号计算损失，更新学生模型参数（通过KL散度或者策略梯度更新）
 
 ## 2. 工程实现细节：
 
@@ -54,8 +54,38 @@ updated: 2026-09-07 18:00:00
 - <strong>词表对齐（Tokenizer Alignment）</strong>：
   - <strong>理想情况（同词表）</strong>：Teacher 和 Student 共享相同的词表，可以直接逐 Token 对齐概率分布（Logits）。
   - <strong>非理想情况（跨词表）：</strong>
+    - <strong>（1）文本空间对齐 / 软概率重映射（verl 框架使用）：</strong>对相同输入文本做 Encode，通过动态规划实现 Student 和 Teacher 的概率重映射。
+    - <strong>（2）基于映射矩阵：</strong>通过线性映射将 Student 的 Logits 映射到 Teacher 的维度，再计算 KL。
+    - <strong>（3）Logit-Free / 强化学习隐式对齐：</strong>绕过 Logits 对齐，针对 Student 生成结果输出标量 Reward 得分或 Log-Likelihood，作为 RM 使用，直接套用 PPO/GRPO 框架。
+
+```python
+动态规划（Dynamic Programming）字符级对齐示例：
+生成文本："The unexpected discovery changed everything."
+Student（10个Token）：[S1: "The", S2: " un", S3: "expected", S4: " dis", S5: "covery", S6: " changed", S7: " every", S8: "thing", S9: "."]
+Teacher（7 个 Token）：[T1: "The", T2: " unexpected", T3: " disco", T4: "very", T5: " changed", T6: " everything", T7: "."]
+
+Student 切分划分:
+Span 1 [0:3]   : [S1: "The"]                                    --> 边界匹配！
+Span 2 [3:13]  : [S2: " un", S3: "expected"]                    --> 边界匹配！
+Span 3 [13:23] : [S4: " dis", S5: "covery"]                     --> 与 Teacher 交叉，需合并
+Span 4 [23:31] : [S6: " changed"]                               --> 边界匹配！
+Span 5 [31:41] : [S7: " every", S8: "thing", S9: "."]           --> 边界匹配！
+
+Teacher 切分划分:
+Span 1 [0:3]   : [T1: "The"]                                    --> 边界匹配！
+Span 2 [3:13]  : [T2: " unexpected"]                            --> 边界匹配！
+Span 3 [13:23] : [T3: " disco", T4: "very"]                     --> 与 Student 交叉，需合并
+Span 4 [23:31] : [T5: " changed"]                               --> 边界匹配！
+Span 5 [31:41] : [T6: " everything", T7: "."]                   --> 边界匹配！
+```
 
 ### 2.2 训练数据构建
+
+| **数据集类型**       | **包含的内容**                                | **作用**                             | **与 OPD 数据的关系**    |
+| -------------------- | --------------------------------------------- | ------------------------------------ | ------------------------ |
+| **Teacher 训练数据** | 包含海量 Prompt + 专家级 Response（离线文本） | 训练出强大的 Teacher                 | **只需共享 Prompt**      |
+| **Student 冷启数据** | 包含基础 Prompt + Response                    | Student 冷启动                       | **只需共享 Prompt**      |
+| **OPD 过程数据**     | **仅需要大量无标注的 Prompt**                 | 用于驱动 Student 进行 On-Policy 采样 | **答案轨迹是动态生成的** |
 
 ### 2.3 优化方式（损失函数）
 
@@ -160,9 +190,7 @@ $$
 
 ### <span class="text-highlight-blue" style="color: #274DEA; font-weight: 650;">Q6：K=1 时，如何结合 GRPO 使用？</span>
 
-<strong>标准的 GRPO是在“句子/序列级别（Sequence-level）”给整条轨迹打一个标量 Reward，然后对整条轨迹更新；</strong>
-
-<strong>而OPD (</strong>$K=1$<strong>) 这种逐 Token 的打分对于上述情况一般有两种实现手段：</strong>
+<strong>标准的 GRPO是在“句子/序列级别（Sequence-level）”给整条轨迹打一个标量 Reward，然后对整条轨迹更新；</strong><strong>而OPD (</strong>$K=1$<strong>) 这种逐 Token 的打分对于上述情况一般有两种实现手段：</strong>
 
 <strong><span class="text-highlight-purple" style="color: #831FFC; font-weight: 650;">1. 累加/平均化（Token-Level $\rightarrow$ Sequence-Level Reward）</span></strong>
 
@@ -187,23 +215,19 @@ $$
 
 <strong>（4）送入标准 GRPO 流程</strong>：
 
-Student 针对同一个 Prompt 采出了 $G$ 条轨迹（比如 $Y_1, Y_2, \dots, Y_G$），得到了 $G$ 个整体得分 $[R_1, R_2, \dots, R_G]$。
-然后按照 GRPO 的标准公式做组内归一化（Z-score Standardize），算出每条轨迹的 <strong>Group Advantage (</strong>$A_i$<strong>)</strong>，最后更新 Student。
+Student 针对同一个 Prompt 采出了 $G$ 条轨迹（比如 $Y_1, Y_2, \dots, Y_G$），得到了 $G$ 个整体得分 $[R_1, R_2, \dots, R_G]$。然后按照 GRPO 的标准公式做组内归一化（Z-score Standardize），算出每条轨迹的 <strong>Group Advantage (</strong>$A_i$<strong>)</strong>，最后更新 Student。
 
 <strong><span class="text-highlight-purple" style="color: #831FFC; font-weight: 650;">2. Token-Level Process Reward（逐 Token 的过程奖励）</span></strong>
 
-若希望保留“<strong>某些 Token 给正反馈，某些 Token 给负反馈</strong>”的精细度（比如某个推导步骤写错了，只打压错的那个 Step/Token），则不能将得分合并成一个标量，工程上可以将GRPO扩展为<strong>Token-Level GRPO</strong>
+若希望保留“<strong>某些 Token 给正反馈，某些 Token 给负反馈</strong>”的精细度（比如某个推导步骤写错了，只打压错的那个 Step/Token），则不能将得分合并成一个标量，工程上可以将GRPO扩展为<strong>Token-Level GRPO</strong>。
 
 
 
 <strong>具体步骤：</strong>
 
-<strong>1. 组内采样：</strong>Student 对同一个 Prompt 采样生成 $G$ 条轨迹（比如 $G=8$）。
+<strong>（1）Student 生成轨迹：</strong>Student 对同一个 Prompt 采样生成 $G$ 条轨迹（比如 $G=8$）。
 
-<strong>2. 构建<span class="text-highlight-red" style="color: #d93025; font-weight: 650;">逐 Token</span>的组内优势：</strong>假设这 8 条轨迹在第 $t$ 个 Token 位置，Teacher 分别算出了 8 个对数概率：$[\text{logp}_1^{(t)}, \text{logp}_2^{(t)}, \dots, \text{logp}_G^{(t)}]$
-
-GRPO 会<strong>直接在当前 Token 位置</strong> $t$，对这 $G$ 个 Teacher 打分做 Z-Score 组内归一化：
-
+<strong>（2）<span class="text-highlight-red" style="color: #d93025; font-weight: 650;">逐 Token</span>计算组内优势：</strong>假设这 8 条轨迹在第 $t$ 个 Token 位置，Teacher 分别算出了 8 个对数概率：$[\text{logp}_1^{(t)}, \text{logp}_2^{(t)}, \dots, \text{logp}_G^{(t)}]$，GRPO 会<strong>直接在当前 Token 位置</strong> $t$，对这 $G$ 个 Teacher 打分做 Z-Score 组内归一化：
 $$
 A_i^{(t)} = \frac{\text{logp}_i^{(t)} - \mu^{(t)}}{\sigma^{(t)}}
 $$
@@ -211,7 +235,7 @@ $$
 - $\mu^{(t)}$：这 8 条轨迹在第 $t$ 个位置上 Teacher 打分的均值。
 - $\sigma^{(t)}$：这 8 条轨迹在第 $t$ 个位置上 Teacher 打分的标准差。
 
-<strong>3. 逐 Token 执行策略梯度更新</strong>
+<strong>（3）逐 Token 策略梯度更新</strong>
 
 在计算 GRPO 的 Loss 时，直接用<strong>这个 Token 专属的</strong> $A_i^{(t)}$ 来加权：
 

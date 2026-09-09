@@ -67,21 +67,28 @@
 }
 
 .article-toc-inline {
-  margin: 1.5rem 0 2rem;
-  padding: 1rem 1.25rem;
-  border-left: 3px solid var(--ly-primary-color, #4d7c8a);
-  background: rgba(77, 124, 138, .06);
+  margin: 1.25rem 0 1.75rem;
+  padding: .85rem 1rem .9rem 1.1rem;
+  border: 1px solid rgba(39, 77, 234, .14);
+  border-left: 3px solid #274dea;
+  border-radius: 6px;
+  background: #f4f8ff;
+  color: #667085;
+  font-size: .88rem;
+  line-height: 1.55;
 }
 
 .article-toc-inline .inline-toc-title {
-  margin-bottom: .6rem;
+  margin-bottom: .45rem;
+  color: #274dea;
+  font-size: .95rem;
   font-weight: 650;
 }
 
 .article-toc-inline ol,
 .article-toc-inline ul {
   margin: 0;
-  padding-left: 1.4rem;
+  padding-left: 1.2rem;
 }
 
 .article-toc-inline .manual-numbering {
@@ -90,25 +97,71 @@
 }
 
 .article-toc-inline .manual-numbering ul {
-  padding-left: 1.25rem;
+  padding-left: 1.05rem;
   list-style: none;
 }
 
 .article-toc-inline .inline-toc-level-1 > span,
 .article-toc-inline .inline-toc-level-1 > a {
-  font-weight: 650;
+  color: #344054;
+  font-weight: 600;
 }
 
 .article-toc-inline li + li {
-  margin-top: .25rem;
+  margin-top: .12rem;
 }
 
 .article-toc-inline a {
-  color: var(--font-color);
+  color: #667085;
+  transition: color .2s ease;
 }
 
 .article-toc-inline a:hover {
-  color: var(--ly-primary-color, #4d7c8a);
+  color: #274dea;
+}
+
+.article-toc-inline li::marker {
+  color: #8ba5ee;
+  font-size: .82em;
+}
+
+/* 右侧固定目录：与正文目录保持同一套蓝色，但更适合窄栏阅读 */
+#card-toc .item-headline {
+  color: #274dea;
+}
+
+#card-toc .toc-content {
+  font-size: .82rem;
+  line-height: 1.5;
+}
+
+#card-toc .toc-content .toc {
+  margin: 0;
+}
+
+#card-toc .toc-content .toc-child {
+  margin-left: .7rem;
+  padding-left: .65rem;
+  border-left: 1px solid rgba(39, 77, 234, .16);
+}
+
+#card-toc .toc-content .toc-link {
+  display: block;
+  padding: .16rem .35rem;
+  border-radius: 4px;
+  color: #667085;
+  transition: color .2s ease, background-color .2s ease;
+}
+
+#card-toc .toc-content .toc-link:hover,
+#card-toc .toc-content .toc-link.active {
+  color: #274dea;
+  background: rgba(39, 77, 234, .08);
+}
+
+#card-toc .toc-content .toc-number {
+  color: #8ba5ee;
+  font-size: .78em;
 }
 
 .math-block {
@@ -118,6 +171,14 @@
 
 .post-content mjx-container {
   font-size: 1em;
+}
+
+@media screen and (min-width: 769px) {
+  .post-content table th:first-child,
+  .post-content table td:first-child {
+    width: 18%;
+    min-width: 140px;
+  }
 }
 
 .text-highlight-red {
